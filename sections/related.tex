@@ -1,0 +1,16 @@
+\section{Related Work}
+
+\textbf{Tool Calling and Programmatic Agents.}\quad
+Tool-augmented LLMs have progressed from single-call protocols to programmatic execution.
+Early work teaches models to emit one structured tool call per turn and interleave it with reasoning, as in Toolformer~\citep{schick2023toolformer}, ReAct~\citep{yao2023react}, ToolLLM~\citep{qin2024toolllm}, and Gorilla~\citep{patil2023gorilla}, and multi-agent frameworks such as AutoGen~\citep{wu2023autogen} and MetaGPT~\citep{hong2024metagpt} coordinate several such agents.
+A parallel line expresses actions as code, starting from program-aided reasoning~\citep{gao2023pal,chen2023pot} and maturing into code-as-action agents that emit executable programs calling tools in a live interpreter, including CodeAct~\citep{wang2024codeact}, code-agent libraries~\citep{smolagents2025}, and recent programmatic tool calling that runs a model-written program against many tools in one runtime~\citep{anthropic2025ptc}.
+These programmatic approaches gain expressiveness and fewer interaction rounds inside a block, yet they still hand the model a linear transcript of code and output across blocks, and the dependency structure that execution induces is left for the model to reconstruct.
+
+\textbf{Feedback, Reflection, and Memory for Agents.}\quad
+A second line improves how agents use their own history.
+Reflection methods summarize past outcomes into natural-language advice, as in Reflexion~\citep{shinn2023reflexion} and Self-Refine~\citep{madaan2023selfrefine}, but the summary is unstructured text and does not track which concrete result each step produced.
+Memory systems extend the usable context, from paged memory in MemGPT~\citep{packer2024memgpt} to knowledge-graph and agentic memory stores~\citep{rasmussen2025zep,xu2025amem}, and cognitive-architecture views organize an agent around explicit state~\citep{sumers2024coala}.
+These systems index facts and entities for later retrieval, whereas GraphPTC indexes what an execution did, namely the call provenance, artifact flow, state versioning, and localized failures inside and across code blocks, and turns that structure into the signal that steers the next action.
+
+In this work, we target the execution history of programmatic tool calling, with the goal of turning a linear transcript of code and output into a structure an agent can reason over.
+Unlike per-call agents that never compose tool calls into programs, and unlike programmatic agents that keep execution history as flat text, \method adopts a more deliberate design by maintaining a task-level dynamic execution graph that models in-block tool effects and cross-block dependencies, and by driving action selection from a bounded summary of that graph.

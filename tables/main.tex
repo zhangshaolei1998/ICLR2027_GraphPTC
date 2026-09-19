@@ -1,0 +1,42 @@
+\begin{table}[t]
+\centering\scriptsize
+\setlength{\tabcolsep}{3.2pt}
+\renewcommand{\arraystretch}{1.05}
+\newcommand{\hd}[1]{\begin{tabular}[b]{@{}c@{}}#1\end{tabular}}
+\begin{tabular}{l ccccccc}
+\toprule
+\textbf{Method}
+ & \hd{\textbf{BrowseComp-}\\\textbf{Plus}\\(Acc)}
+ & \hd{\textbf{AppWorld-}\\\textbf{Normal}\\(TGC)}
+ & \hd{\textbf{AppWorld-}\\\textbf{Challenge}\\(TGC)}
+ & \hd{\textbf{Agent-}\\\textbf{Diff}\\(Pass)}
+ & \hd{\textbf{FanOutQA}\\\textbf{}\\(Judge)}
+ & \hd{\textbf{FRAMES}\\\textbf{}\\(Judge)}
+ & \hd{\textbf{Automation-}\\\textbf{Bench}\\(Pass)} \\
+\midrule
+\multicolumn{8}{c}{\textit{\textbf{GPT-5.6-Sol}}} \\
+Direct Tool Calling & 73.49 & 82.10 & 81.80 & 51.34 & 55.81 & 77.31 & 20.83 \\
+PTC                 & 80.00 & 89.90 & 90.60 & 39.73 & 52.58 & 73.42 & 29.17 \\
+\textbf{GraphPTC}   & \best{80.60} & \best{91.70} & \best{93.00} & \best{51.49} & \best{60.00} & \best{79.00} & \best{31.00} \\
+\midrule
+\multicolumn{8}{c}{\textit{\textbf{Claude-Opus-5}}} \\
+Direct Tool Calling & 43.98 & 94.00 & 80.80 & 75.14 & 77.74 & 84.95 & 28.67 \\
+PTC                 & 10.96 & 59.50 & 79.10 & 68.06 & 76.77 & 85.19 & 32.50 \\
+\textbf{GraphPTC}   & \best{49.04} & \best{95.80} & \best{95.00} & \best{79.17} & \best{78.71} & \best{85.56} & \best{33.50} \\
+\midrule
+\multicolumn{8}{c}{\textit{\textbf{DeepSeek-V4-Pro}}} \\
+Direct Tool Calling & 4.58  & 81.00 & 65.70 & 70.09 & 57.42 & 81.43 & 21.50 \\
+PTC                 & 3.49  & 88.70 & 80.10 & 72.47 & 58.06 & 80.83 & 17.00 \\
+\textbf{GraphPTC}   & \best{13.37} & \best{89.90} & \best{95.20} & \best{73.96} & \best{62.26} & \best{81.55} & \best{22.83} \\
+\midrule
+\multicolumn{8}{c}{\textit{\textbf{Kimi-K3}}} \\
+Direct Tool Calling & 8.92  & 72.00 & 46.50 & 77.53 & 49.03 & 73.54 & 27.50 \\
+PTC                 & 2.89  & 85.70 & 83.20 & 78.12 & 28.71 & 75.85 & 28.00 \\
+\textbf{GraphPTC}   & \best{10.48} & \best{86.30} & \best{84.90} & \best{78.72} & \best{50.65} & \best{76.46} & \best{28.83} \\
+\bottomrule
+\end{tabular}
+\vspace{-1mm}
+\caption{Main results on seven tool-use benchmark settings across four backbones. Each column reports the primary metric of one setting, with answer accuracy for BrowseComp-Plus, Task Goal Completion (TGC) for the two AppWorld splits, pass rate for Agent-Diff and AutomationBench, and judge accuracy for FanOutQA and FRAMES. \textbf{Bold} marks the best method per backbone and benchmark. GraphPTC improves over both Direct Tool Calling and PTC on every benchmark.}
+\label{tab:main}
+\vspace{-3mm}
+\end{table}

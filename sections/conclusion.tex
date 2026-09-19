@@ -1,0 +1,6 @@
+\section{Conclusion}
+
+We presented \method, a framework that models programmatic tool calling as a task-level dynamic execution graph.
+By turning the linear execution history of PTC into a typed structure, \method models the internal logic of each program block as tool effects, artifacts, states, and failures, and models cross-block dependencies as a multi-relation graph over which an agent declares intent and chooses to continue, patch a failed step, replan a dependency path, or answer.
+Experiments on seven tool-use benchmark settings with four backbones show that \method improves over both Direct Tool Calling and PTC on every benchmark, reaches a given accuracy with $1.5$ to $3$ times fewer interaction rounds than Direct Tool Calling, and widens its advantage on the hardest long-horizon tasks.
+These results indicate that representing what an execution did, and not only what an agent saw, is what lets a programmatic agent reason over its own history, and future work can extend the execution graph toward cross-task reuse and learned graph-conditioned policies.

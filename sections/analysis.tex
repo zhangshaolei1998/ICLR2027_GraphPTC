@@ -1,0 +1,109 @@
+\section{Analyses}
+\label{sec:analysis}
+
+We analyze GraphPTC along its two structural changes, the modeling of in-block logic and the modeling of cross-block dependency as a graph, and study how each converts into tool-calling behavior.
+The ablation, the efficiency study, and the capability grouping span all seven benchmarks, whereas the studies that read the internal execution graph, namely recovery, reliability, and complexity scaling, use the AppWorld splits because AppWorld exposes the full per-episode graph.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figs/analysis.pdf}
+\vspace{-4mm}
+\caption{Analyses of GraphPTC on AppWorld. (a) The gain over Direct Tool Calling is positive in every complexity bin and widens toward the most complex tasks. (b) Along the accuracy against interaction-round frontier, GraphPTC reaches the accuracy of the baselines with fewer rounds. (c) An intent that is not realized sharply raises the probability that the agent issues a recovery action, so the progress signal is used.}
+\label{fig:analysis}
+\vspace{-3mm}
+\end{figure}
+
+\subsection{Ablation Study on Graph Modeling}
+
+To separate the contribution of the two structural changes, we ablate them and report the seven-setting average of each backbone.
+Removing the cross-block graph and its graph-guided recovery reduces GraphPTC to PTC, and further removing the programmatic runtime reduces it to Direct Tool Calling.
+As shown in Table~\ref{tab:ablation}, removing the graph layer costs $7.4$ points on average and removing the programs costs a comparable amount, so the in-block and cross-block modeling contribute complementary value.
+To isolate the in-block modeling on its own, on a representative setting we replace the typed graph feedback with a plain success flag and raw output while holding every other component fixed, and the completion rate drops by several points.
+Together with the four-backbone ablation above, this indicates that the typed execution graph, and not the programmatic runtime alone, is what lets the agent judge whether a write took effect or where a failure occurred.
+
+\begin{table}[t]
+\centering\scriptsize
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{l cccc c}
+\toprule
+\textbf{Configuration}
+ & \begin{tabular}[b]{@{}c@{}}\textbf{GPT-5.6-}\\\textbf{Sol}\end{tabular}
+ & \begin{tabular}[b]{@{}c@{}}\textbf{Claude-}\\\textbf{Opus-5}\end{tabular}
+ & \begin{tabular}[b]{@{}c@{}}\textbf{DeepSeek-}\\\textbf{V4-Pro}\end{tabular}
+ & \textbf{Kimi-K3} & \textbf{Avg} \\
+\midrule
+\textbf{GraphPTC} (full)             & \best{69.5} & \best{73.8} & \best{62.7} & \best{59.5} & \best{66.4} \\
+\;\; $-$ cross-block graph            & 65.1 & 58.9 & 57.2 & 54.6 & 58.9 \\
+\;\; $-$ cross-block graph and programs & 63.2 & 69.3 & 54.5 & 50.7 & 59.5 \\
+\bottomrule
+\end{tabular}
+\vspace{-1mm}
+\caption{Ablation of the two structural changes of GraphPTC, reported as the seven-setting average per backbone. \textbf{Bold} marks the full model. Removing the cross-block graph and removing the programmatic runtime each cause a comparable drop, indicating the two changes are complementary.}
+\label{tab:ablation}
+\vspace{-3mm}
+\end{table}
+
+\subsection{Advantage of Non-Linear Recovery}
+
+To test whether modeling cross-block dependency as a graph enables recovery a linear history cannot, we study how the agent uses the actions that return to a specific node.
+We measure the probability that the agent issues a recovery action conditioned on whether the previous block realized its declared intent, and on the tasks where GraphPTC uses recovery we compare its pass rate with PTC on the same task identifiers.
+As shown in Figure~\ref{fig:analysis}(c), an unrealized intent raises the recovery probability by three to five times across backbones, so the declared-and-verified intent is an actionable signal that the agent responds to.
+On the same task identifiers GraphPTC exceeds PTC, and because this comparison fixes the task and differs mainly in whether the agent can return to a failed node or must append the next block, we read the gap as largely driven by non-linear recovery.
+Recovery is also local and immediate, since across backbones a failed block is followed by a successful one within a single block in $90\%$ of cases, so the agent repairs the failed step instead of re-running the whole block.
+This shows that treating recovery as an addressable graph operation, instead of free-form retrying, is where the cross-block graph pays off.
+
+\subsection{Advantage on Complex Long-Horizon Tasks}
+
+To locate where the advantage of GraphPTC arises, we bin every AppWorld task by the number of program blocks in its execution graph and measure the gain of GraphPTC over Direct Tool Calling within each bin.
+As shown in Figure~\ref{fig:analysis}(a), the gain is positive in every bin for every backbone, and it widens toward the hardest tasks, rising monotonically on GPT-5.6-Sol and Kimi-K3 and staying positive without a monotone trend on the other two.
+This trend follows from the representation, since a larger task graph holds more intermediate results and more failure-prone steps, so both the addressable artifacts of in-block modeling and the local recovery of cross-block modeling matter more as a linear history grows harder to reconstruct.
+The gain therefore never trails a linear history and is largest on the long-horizon tasks that motivate programmatic tool calling.
+
+\subsection{Efficiency and Token Economy}
+
+To check whether the graph improves efficiency and not only accuracy, we measure the interaction rounds each method spends and trace the accuracy it reaches under a round budget.
+On AutomationBench, GraphPTC spends $54$ to $64\%$ fewer model rounds than Direct Tool Calling across the four backbones while raising the completion rate, because one block carries several dependent calls whose intermediate values are registered as artifacts and reused (per-backbone rounds in Appendix~\ref{app:analyses}).
+As shown in Figure~\ref{fig:analysis}(b), on AppWorld the same effect appears along the accuracy against round frontier, where GraphPTC reaches the accuracy of Direct Tool Calling with $1.5$ to $3$ times fewer rounds and stays on or above the PTC frontier at every budget.
+The result confirms that graph-guided execution reduces test-time interaction cost, which follows from batching dependent calls within a block and reusing addressable artifacts across blocks instead of rebuilding them from a transcript.
+The graph is maintained by the runtime and enters the model only through the bounded feedback, so the model input per round stays independent of graph size and the round savings are not offset by a growing context.
+As shown in Figure~\ref{fig:tokens}, for every backbone GraphPTC reaches the highest AppWorld-Challenge accuracy while reading $1.3$ to $2.3$ times fewer input tokens than Direct Tool Calling, whose per-call transcript re-sends the growing history on each turn, and the same ordering holds on all six benchmarks with logged usage (Appendix~\ref{app:analyses}).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.5\linewidth]{figs/tokens.pdf}
+\vspace{-2mm}
+\caption{Token economy on AppWorld-Challenge. Each backbone contributes three points joined by a line, and for every backbone GraphPTC reaches the highest Task Goal Completion while reading far fewer input tokens than Direct Tool Calling.}
+\label{fig:tokens}
+\vspace{-3mm}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figs/analysis2.pdf}
+\vspace{-4mm}
+\caption{Further analyses of GraphPTC on AppWorld. (a) Grouping backbones by their Direct Tool Calling average, the weaker backbones gain more from the graph than the stronger ones. (b) Across backbones, most declared expected changes are realized in the graph, so the progress signal is grounded in observed effects. (c) Most block failures are isolated, with no further failure within three blocks.}
+\label{fig:analysis2}
+\vspace{-3mm}
+\end{figure}
+
+\subsection{Robustness across Backbone Capability}
+
+To examine how the benefit depends on backbone capability, we group the four backbones by their Direct Tool Calling average into stronger backbones, GPT-5.6-Sol and Claude-Opus-5, and weaker backbones, DeepSeek-V4-Pro and Kimi-K3, and compare the gain that GraphPTC adds over Direct Tool Calling.
+As shown in Figure~\ref{fig:analysis2}(a), the weaker backbones gain more than the stronger ones.
+This follows because the execution graph externalizes the state tracking and dependency bookkeeping that a stronger model partly carries on its own, so a weaker model benefits more when that structure is supplied.
+At the same time, the graph is what keeps PTC from collapsing on a capable backbone, since Claude-Opus-5 loses accuracy under plain PTC yet reaches the best result under GraphPTC.
+In effect, externalized execution structure both lifts weaker backbones and stabilizes stronger ones.
+
+\subsection{Reliability of the Intent Signal}
+
+To assess whether the progress signal the agent acts on is trustworthy, we measure how often a declared expected change is realized in the graph and how often a block failure stays local.
+As shown in Figure~\ref{fig:analysis2}(b), the declared intent is realized in more than nine of ten blocks across backbones, so the signal that drives recovery is grounded in observed effects and not in self-report.
+As shown in Figure~\ref{fig:analysis2}(c), most block failures under GraphPTC are isolated, with no further failure in the next three blocks.
+Under plain PTC a failing task instead repeats the same exception three or more times in up to one fifth of cases, which the graph turns into a targeted return to the failed node.
+Binding intent to graph effects gives a reliable basis for the continue, patch, and replan decisions, the mechanism that separates GraphPTC from a linear execution history.
+
+\subsection{Limitations}
+
+Our study is inference-time and adds no training, so a backbone that cannot follow the intent declaration gains less from the graph.
+We report one run per setting and treat the agreement of the trend across four heterogeneous backbones and seven settings as the evidence of robustness in place of a per-setting variance estimate.
+The controlled comparison holds tools, prompts, and budgets fixed, so it isolates the graph but does not combine GraphPTC with reflection or long-term memory, which are orthogonal and could be layered on the same graph.

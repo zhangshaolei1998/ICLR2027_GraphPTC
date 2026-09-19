@@ -1,0 +1,184 @@
+\section{Node and Edge Types of the Execution Graph}
+\label{app:types}
+
+Table~\ref{tab:types} lists the typed nodes and edges maintained in the execution graph.
+Node types cover the task, program blocks, tool or API calls with read or write effects, artifacts, state versions and state effects, failures, and action intents.
+Edge types cover execution structure, data flow, state evolution, failure attribution, cross-block equivalence and reuse, and intent binding.
+
+\begin{table}[h]
+\centering\small
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{ll}
+\toprule
+\textbf{Category} & \textbf{Types} \\
+\midrule
+Nodes & \texttt{TASK}, \texttt{BLOCK}, \texttt{CALL} (\texttt{read}/\texttt{write}), \texttt{ARTIFACT}, \texttt{STATE}, \texttt{FAILURE}, \texttt{INTENT} \\
+Execution & \texttt{contains}, \texttt{executes}, \texttt{produces}, \texttt{fails\_at} \\
+Data flow & \texttt{consumes}, \texttt{reuses}, \texttt{derives} \\
+State & \texttt{reads}, \texttt{writes}, \texttt{mutates}, \texttt{supersedes} \\
+Cross-block & \texttt{equivalent\_to} \\
+Intent & \texttt{targets}, \texttt{implemented\_by} \\
+\bottomrule
+\end{tabular}
+\caption{Node and edge types of the dynamic execution graph.}
+\label{tab:types}
+\end{table}
+
+\section{Implementation Details}
+\label{app:impl}
+
+The execution graph is maintained incrementally with node and edge cursors, so extracting the round delta $\Delta_t$ visits only the nodes and edges added in the current round and does not solve a general graph edit distance.
+Tool wrappers record arguments, results, and effects during execution, and the trace projector attaches these to the current block after execution.
+Cross-block equivalence uses tool effect contracts to normalize argument and result identities, so cached deterministic reads may be reused while tools with side effects follow their contract.
+The bounded feedback prunes list items first and then reduces fields under the character budget $B$, and the full graph is retained at runtime and never sent to the model in whole.
+
+\section{Additional Analyses}
+\label{app:analyses}
+
+\textbf{Scenario Goal Completion on AppWorld.}\quad
+Table~\ref{tab:sgc} reports the secondary AppWorld metric, Scenario Goal Completion, which requires every task in a scenario to succeed together.
+GraphPTC improves Scenario Goal Completion on both splits for every backbone, and the margin over PTC is wider than on Task Goal Completion, which matches the intuition that a scenario is only as strong as its most dependent step.
+
+\begin{table}[h]
+\centering\scriptsize
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{l cc cc}
+\toprule
+ & \multicolumn{2}{c}{\textbf{AppWorld-Normal}} & \multicolumn{2}{c}{\textbf{AppWorld-Challenge}} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+\textbf{Backbone} & \textbf{PTC} & \textbf{GraphPTC} & \textbf{PTC} & \textbf{GraphPTC} \\
+\midrule
+GPT-5.6-Sol     & 83.90 & \best{85.70} & 82.00 & \best{87.10} \\
+Claude-Opus-5   & 46.40 & \best{92.90} & 69.10 & \best{92.10} \\
+DeepSeek-V4-Pro & 80.40 & \best{82.10} & 66.90 & \best{88.50} \\
+Kimi-K3         & 67.90 & \best{76.80} & 66.90 & \best{70.50} \\
+\bottomrule
+\end{tabular}
+\caption{Scenario Goal Completion on AppWorld. \textbf{Bold} marks the better method per backbone and split. GraphPTC improves the scenario metric on every backbone and split.}
+\label{tab:sgc}
+\end{table}
+
+\textbf{Use of the recovery actions.}\quad
+Table~\ref{tab:actions} counts how often the agent issues \textsc{Patch} and \textsc{Replan} on AppWorld and the pass rate of the tasks that use them.
+The recovery actions are used on a large share of tasks, and the tasks that trigger a \textsc{Patch} still pass in almost all cases, which shows the graph turns a failure into a targeted retry that usually succeeds.
+
+\begin{table}[h]
+\centering\scriptsize
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{l ccc}
+\toprule
+\textbf{Backbone} & \textbf{\textsc{Patch} calls} & \textbf{\textsc{Replan} calls} & \textbf{Pass rate on \textsc{Patch} tasks} \\
+\midrule
+GPT-5.6-Sol     & 516 & 52 & 100.0 \\
+Claude-Opus-5   & 506 & 20 & 97.8 \\
+DeepSeek-V4-Pro & 586 & 0  & 94.7 \\
+Kimi-K3         & 972 & 3  & 99.1 \\
+\bottomrule
+\end{tabular}
+\caption{Use of the recovery actions on AppWorld, summed over the normal and challenge splits. Tasks that trigger a \textsc{Patch} pass in almost all cases.}
+\label{tab:actions}
+\end{table}
+
+\textbf{Interaction rounds on AutomationBench.}\quad
+Table~\ref{tab:ab-rounds} reports the average model rounds per task on AutomationBench.
+GraphPTC spends $54$ to $64\%$ fewer rounds than Direct Tool Calling on every backbone while reaching a higher completion rate, which complements the AppWorld frontier in the main text and shows the efficiency gain is not specific to one benchmark.
+
+\begin{table}[h]
+\centering\scriptsize
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{l ccc}
+\toprule
+\textbf{Backbone} & \textbf{Direct Tool Calling} & \textbf{GraphPTC} & \textbf{Fewer rounds} \\
+\midrule
+GPT-5.6-Sol     & 32.4 & 11.5 & 64\% \\
+Claude-Opus-5   & 27.0 & 11.6 & 57\% \\
+DeepSeek-V4-Pro & 54.8 & 20.1 & 63\% \\
+Kimi-K3         & 30.2 & 13.9 & 54\% \\
+\bottomrule
+\end{tabular}
+\caption{Average model rounds per task on AutomationBench. GraphPTC reaches a higher completion rate with far fewer rounds on every backbone.}
+\label{tab:ab-rounds}
+\end{table}
+
+\textbf{Input tokens across benchmarks.}\quad
+Table~\ref{tab:tokens-multi} reports the mean input tokens a task consumes, averaged over the four backbones, for six benchmarks.
+On every benchmark GraphPTC reads far fewer input tokens than Direct Tool Calling and only modestly more than PTC, so the token economy shown for AppWorld in the main text holds throughout, since a per-call transcript re-sends the growing history on each turn while the bounded feedback does not.
+
+\begin{table}[h]
+\centering\scriptsize
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{l ccc}
+\toprule
+\textbf{Benchmark} & \textbf{Direct Tool Calling} & \textbf{PTC} & \textbf{GraphPTC} \\
+\midrule
+AppWorld-Normal    & 151.4k & 60.2k  & 84.1k \\
+AppWorld-Challenge & 228.8k & 97.3k  & 133.5k \\
+Agent-Diff         & 113.2k & 34.4k  & 49.0k \\
+FanOutQA           & 128.5k & 49.5k  & 63.9k \\
+FRAMES             & 93.0k  & 42.2k  & 55.2k \\
+AutomationBench    & 324.4k & 156.6k & 171.9k \\
+\bottomrule
+\end{tabular}
+\caption{Mean input tokens per task, averaged over the four backbones. GraphPTC reads far fewer input tokens than Direct Tool Calling on every benchmark while reaching the best accuracy.}
+\label{tab:tokens-multi}
+\end{table}
+
+\textbf{Gain by reasoning type on FRAMES.}\quad
+Table~\ref{tab:frames-type} breaks the FRAMES gain down by reasoning type for the two closed backbones.
+The gain is largest on post-processing and temporal reasoning, where an answer must combine results across several calls, which is where cross-block linking removes the most redundant work.
+
+\begin{table}[h]
+\centering\scriptsize
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{l ccccc}
+\toprule
+\textbf{Backbone} & \begin{tabular}[b]{@{}c@{}}Multiple\\constraints\end{tabular} & \begin{tabular}[b]{@{}c@{}}Numerical\end{tabular} & \begin{tabular}[b]{@{}c@{}}Post-\\processing\end{tabular} & \begin{tabular}[b]{@{}c@{}}Tabular\end{tabular} & \begin{tabular}[b]{@{}c@{}}Temporal\end{tabular} \\
+\midrule
+GPT-5.6-Sol   & +1.5 & +1.4 & +4.7 & +1.7 & +2.2 \\
+Claude-Opus-5 & $-0.6$ & +1.4 & +0.9 & +0.4 & +2.2 \\
+\bottomrule
+\end{tabular}
+\caption{FRAMES gain of GraphPTC over the stronger baseline by reasoning type, in accuracy points. The gain concentrates on post-processing and temporal reasoning.}
+\label{tab:frames-type}
+\end{table}
+
+\textbf{Where the workflow gain arises.}\quad
+Agent-Diff labels each task by the operations it performs, and Table~\ref{tab:opsplit} splits the tasks by whether they update or delete existing state.
+GraphPTC improves over PTC by $7.2$ points on the state-overwriting tasks and by essentially nothing on the tasks with no overwrite, which matches the mechanism, since the state versioning of the graph helps exactly where a later step depends on a mutated state and adds little where there is no state to track.
+
+\begin{table}[h]
+\centering\scriptsize
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{l cccc}
+\toprule
+\textbf{Task type} & \textbf{\#tasks} & \textbf{Direct Tool Calling} & \textbf{PTC} & \textbf{GraphPTC} \\
+\midrule
+Update or delete state & 1649 & 63.3 & 58.3 & \best{65.5} \\
+No state overwrite      & 654  & \best{79.2} & 79.0 & 78.7 \\
+\bottomrule
+\end{tabular}
+\caption{Agent-Diff pass rate split by whether a task overwrites existing state, aggregated over the four backbones. GraphPTC's gain concentrates on state-overwriting tasks, where the state versioning of the graph applies.}
+\label{tab:opsplit}
+\end{table}
+
+\section{Case Studies}
+\label{app:cases}
+
+Figure~\ref{fig:casegraph} draws an example execution graph and marks the three mechanisms discussed below. Each trace is abbreviated to the relevant blocks.
+
+\input{sections/fig_casegraph}
+
+\textbf{Case 1: cross-block equivalence removes redundant retrieval.}\quad
+On a multi-hop question, block $P_1$ queries \emph{population of the capital of country X} and block $P_3$ later queries \emph{capital city X population}.
+The trace projector assigns both results the same identity key and adds an \texttt{equivalent\_to} edge (mark (1) in Figure~\ref{fig:casegraph}), and the feedback reports the second result as equivalent.
+Under PTC the same content returns as a fresh output string, and the agent issues a third query to reconcile them, whereas under GraphPTC the agent reads the existing artifact and moves to the next hop.
+
+\textbf{Case 2: a failed write becomes a targeted patch.}\quad
+On an AppWorld task, block $P_4$ posts a payment whose call raises an error, so the projector adds a \texttt{FAILURE} node with a \texttt{fails\_at} edge and the feedback marks the intent unrealized (mark (2)).
+The agent declares \textsc{Patch} on the same target, fixes the malformed field, and re-executes only that step.
+Under PTC the failure is one line inside a long output, and the agent re-runs the whole block, which re-issues the calls that had already succeeded.
+
+\textbf{Case 3: a later block links to an earlier write instead of re-deriving it.}\quad
+On a workflow task, block $P_2$ updates a contact record and block $P_5$ needs the updated field.
+The state is versioned with a \texttt{supersedes} edge, so the feedback points block $P_5$ at the current version and the agent reads it directly (mark (3)).
+Under PTC the agent re-fetches the record to be sure of its value, which adds a round and risks reading a stale copy from earlier in the transcript.

@@ -1,0 +1,64 @@
+\documentclass{article}
+\usepackage{iclr2027_conference,times}
+
+\input{math_commands.tex}
+
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{bm}
+\usepackage{bbm}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds,calc}
+
+\newcommand{\PreserveBackslash}[1]{\let\temp=\\#1\let\\=\temp}
+\newcolumntype{C}[1]{>{\PreserveBackslash\centering}p{#1}}
+\newcolumntype{R}[1]{>{\PreserveBackslash\raggedleft}p{#1}}
+
+\definecolor{rowgray}{gray}{0.90}
+\newcommand{\method}{\textsc{GraphPTC}\xspace}
+\usepackage{xspace}
+
+\newcommand{\best}[1]{\textbf{#1}}
+\newcommand{\up}[1]{\textcolor{red!70!black}{#1}}
+\newcommand{\down}[1]{\textcolor{blue!70!black}{#1}}
+
+\title{\method: Modeling Programmatic Tool Calling \\ as a Dynamic Execution Graph}
+
+\author{Anonymous authors\\
+Paper under double-blind review}
+
+\begin{document}
+
+\maketitle
+
+\input{sections/abstract}
+\input{sections/intro}
+\input{sections/related}
+\input{sections/method}
+\input{sections/experiments}
+\input{sections/analysis}
+\input{sections/conclusion}
+
+\subsection*{Reproducibility Statement}
+The method is specified in Section~\ref{sec:method} and Algorithm~\ref{alg:graphptc}, with node and edge types in Appendix~\ref{app:types} and further details in Appendix~\ref{app:impl}. All arms share one protocol described in Section~\ref{sec:experiments-setup}, and the plotting code and the raw numbers behind every analysis figure are released under the \texttt{code/} directory.
+
+\subsection*{AI Use Statement}
+Generative AI tools were used to assist with language editing of the manuscript. All technical content, experiments, and analyses were designed, run, and verified by the authors, who take responsibility for the final content.
+
+\bibliography{graphptc}
+\bibliographystyle{iclr2027_conference}
+
+\appendix
+\input{sections/appendix}
+
+\end{document}

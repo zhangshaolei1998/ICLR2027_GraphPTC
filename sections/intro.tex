@@ -1,0 +1,40 @@
+\section{Introduction}
+\label{sec:intro}
+
+Tool calling is the primary interface through which large language models (LLMs) act on external environments, and its form has been evolving.
+Early agents issue a single tool call per model turn and read its result before deciding the next call, following the reasoning-and-acting paradigm~\citep{yao2023react,schick2023toolformer,qin2024toolllm}.
+Recent systems instead adopt \emph{Programmatic Tool Calling} (PTC), where the model writes a program that composes many tool calls with loops, conditionals, and intermediate data processing, and the program runs in a persistent runtime whose variables carry across turns~\citep{gao2023pal,wang2024codeact,smolagents2025,anthropic2025ptc}.
+By packing a coherent phase of work into one executable block, PTC reduces the number of model-tool interaction rounds, expresses control flow that a call-per-turn protocol cannot, and lets a later block reuse variables produced by an earlier one.
+However, the expressiveness that PTC gains inside a block is not matched by how it organizes work across blocks.
+
+Across blocks, the history that a PTC agent conditions on is a flat sequence of code, standard output, and error text ordered by time, which is a lossy record of what execution did.
+A single block on the AppWorld benchmark~\citep{trivedi2024appworld} issues five to ten tool calls whose read or write effects and produced values are flattened into one output string, and a task spans more than one hundred such values across a dozen blocks.
+When the agent later needs to know whether a write took effect, which earlier value a new step depends on, or whether two differently phrased queries returned the same content, it has to reconstruct these relations by re-reading raw text.
+This difficulty stems from a representation that stores execution as concatenated strings and never as the dependency structure that execution induces.
+
+\input{sections/fig_overview}
+
+The concatenated representation produces three limitations that build on one another.
+\label{sec:intro-limit}
+At the representation layer, the history is a \emph{linear execution context}, where call provenance, artifact consumption, and state versioning have no unified form, so the agent rebuilds prior results and their relations from scratch.
+At the analysis layer, feedback carries \emph{implicit execution progress}, because it never relates what a block intended to achieve to what it actually changed, and a block that raises no error can still re-fetch an existing result without advancing the task.
+At the decision layer, standard output and errors give \emph{unstructured decision feedback} that describes only the current block, leaving the agent to infer from scattered history whether to proceed, fix the program, or change strategy, and it easily repeats a prior attempt or extends an unproductive path.
+
+To address these limitations, we introduce \method, which keeps the programmatic expressiveness of PTC and maintains a task-level \emph{dynamic execution graph} built incrementally from real running traces.
+As shown in Figure~\ref{fig:overview}, \method changes two structural aspects of PTC.
+First, it models the internal logic of each block, so a code execution becomes a typed subgraph of tool calls with read or write effects, produced artifacts, state versions, and localized failures instead of an opaque output string.
+Second, it models cross-block dependency as a multi-relation graph instead of a linear text stream, linking equivalent results, reused artifacts, and superseded states so that history becomes addressable.
+Building on these two changes, \method runs three stages.
+Graph-based execution modeling projects each trace into a shared typed graph and links cross-block dependencies.
+Graph-based progress assessment binds a declared intent to the graph change it produces and separates new results from repeated ones.
+Graph-based action selection turns the graph into a bounded summary over which the agent chooses to continue, patch a failed step, replan a dependency path, or answer.
+
+We evaluate \method on seven tool-use benchmark settings with four backbone LLMs.
+\method improves over both Direct Tool Calling and PTC on every benchmark, by $7.4$ points over PTC on average, and it reaches a given accuracy with $1.5$ to $3$ times fewer interaction rounds than Direct Tool Calling.
+Its advantage also widens with task complexity, reaching $43$ points over Direct Tool Calling on the hardest tasks, and it transfers across closed and open backbones.
+Our contributions are three-fold.
+\begin{itemize}[leftmargin=1.2em, itemsep=-0.3ex, topsep=0ex]
+    \item \textbf{Graph-Structured Tool Calling.} To the best of our knowledge, \method is the first framework that models programmatic tool calling as a task-level dynamic execution graph, capturing in-block tool effects and cross-block dependencies that a linear history discards.
+    \item \textbf{Graph-Guided Execution.} We bind a declared intent to the graph change it produces and construct a bounded graph feedback, which lets the agent judge progress from graph effects and treat recovery as an addressable graph operation over continue, patch, replan, and answer.
+    \item \textbf{Consistent Empirical Gains.} On seven settings and four backbones, \method surpasses Direct Tool Calling and PTC on the primary metric, widens its advantage on complex long-horizon tasks, and reduces interaction rounds at equal accuracy.
+\end{itemize}

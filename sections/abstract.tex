@@ -1,0 +1,8 @@
+\begin{abstract}
+Tool calling has become the primary way large language models act on external environments, and its form is shifting from issuing one tool call per model turn toward Programmatic Tool Calling (PTC), where a model writes a program that composes many tool calls, control flow, and intermediate data processing inside a single block executed in a persistent runtime.
+PTC reduces model-tool interaction rounds and expresses in-block control flow that a per-call protocol cannot, yet across program blocks its execution history remains a linear sequence of code, standard output, and errors.
+This linear history leaves cross-block dependencies unrepresented, execution progress implicit, and decision feedback unstructured, so the agent repeatedly reconstructs prior results and their relations by re-reading raw text.
+In this paper we introduce \method, which preserves the programmatic expressiveness of PTC and maintains a task-level dynamic execution graph from real running traces.
+\method models the internal logic of each block as a typed subgraph of tool effects, artifacts, states, and failures, and models cross-block dependencies as a multi-relation graph over which the agent declares intent and chooses to continue, patch a failed step, or replan a dependency path.
+Experiments on seven tool-use benchmark settings with four backbone models show that \method improves over both Direct Tool Calling and PTC on every benchmark, reaches a given accuracy with 1.5 to 3 times fewer interaction rounds than Direct Tool Calling, and widens its advantage on complex long-horizon tasks.
+\end{abstract}

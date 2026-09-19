@@ -1,0 +1,134 @@
+\section{\method}
+\label{sec:method}
+
+\method retains the ability of PTC to organize many tool calls and intermediate data processing into one executable program, and augments it with a task-level dynamic execution graph that is built from real running traces.
+The design follows three stages that respond one to one to the three limitations of Section~\ref{sec:intro-limit}.
+Graph-based execution modeling resolves the linear execution context, graph-based progress assessment resolves the implicit execution progress, and graph-based action selection resolves the unstructured decision feedback.
+
+We first fix notation.
+Let $P_t$ be the program the agent writes at round $t$, $\mathcal{G}_{t-1}$ the accumulated graph before this round, and $\tau_t$ the trace obtained by executing $P_t$ with instrumented tools.
+When the agent writes $P_t$ it also declares an intent $I_t$.
+The runtime projects the trace into the graph, extracts the change, and produces a bounded feedback, written as
+\begin{equation}
+\mathcal{G}_t = f_{\mathrm{proj}}(\mathcal{G}_{t-1}, I_t, \tau_t), \qquad
+\Delta_t = f_{\mathrm{diff}}(\mathcal{G}_{t-1}, \mathcal{G}_t), \qquad
+F_t = f_{\mathrm{sum}}^{B}(\mathcal{G}_t, I_t, \Delta_t),
+\label{eq:pipeline}
+\end{equation}
+where $f_{\mathrm{proj}}$ is the trace projection that registers the intent and writes the execution into the graph, $f_{\mathrm{diff}}$ extracts the effect of the round, and $f_{\mathrm{sum}}$ organizes that effect into decision evidence under a feedback budget $B$.
+The agent then produces the next intent and program from the task $q$, the retained history $\mathcal{H}_t$, and the feedback, as $(I_{t+1}, P_{t+1}) = \pi(q, \mathcal{H}_t, F_t)$, where $\pi$ denotes the backbone LLM.
+
+\subsection{Graph-Based Execution Modeling}
+\label{sec:method-modeling}
+
+This stage turns a time-ordered running record into a typed execution graph $\mathcal{G}=(\mathcal{V},\mathcal{E})$ maintained per task, so that result provenance, cross-block consumption, and state evolution obtain one representation.
+The node set $\mathcal{V}$ covers program blocks, tool calls, artifacts, state versions, and failures, together with a task node and intent nodes, and the edge set $\mathcal{E}$ carries typed relations for execution, data flow, and state.
+
+\textbf{Typed Trace Projection.}\quad
+The key departure from PTC is that a code execution is modeled by its internal effects and not by its output string.
+During execution, tool wrappers record the arguments, results, and effects of every call, and $f_{\mathrm{proj}}$ attaches these calls to the current block $b_t$ and supplements block outputs, state accesses, and failures, adding the edges
+\begin{equation}
+\{\, b_t \xrightarrow{\mathrm{exec}} c \mid c \in \mathcal{C}_t \,\}
+\ \cup\
+\{\, c \xrightarrow{\mathrm{prod}} v \mid v \in \mathcal{A}_t \,\}
+\ \cup\
+\{\, b_t \xrightarrow{\mathrm{fail}} \phi \mid \phi \in \Phi_t \,\},
+\label{eq:proj}
+\end{equation}
+where $\mathcal{C}_t$ is the set of calls issued by $b_t$, $\mathcal{A}_t$ the artifacts they produce, and $\Phi_t$ the failures, and every call $c$ carries a typed effect $\varepsilon(c)\in\{\mathrm{read},\mathrm{write}\}$ with success and state-change flags.
+Because calls inside loops and conditionals all enter the graph, multi-tool execution within one block becomes analyzable, and by sharing node identifiers a later block links to existing nodes to form one representation across the whole episode.
+
+\textbf{Cross-Block Dependency Linking.}\quad
+The second departure is that history across blocks is a multi-relation graph and not a linear order.
+Guided by tool effect contracts, $f_{\mathrm{proj}}$ assigns each artifact a normalized identity key $\kappa(\cdot)$ over its content, and links a later artifact to an earlier one when their keys agree,
+\begin{equation}
+v \xrightarrow{\mathrm{equiv}} v' \quad\text{when}\quad \kappa(v)=\kappa(v'),
+\label{eq:equiv}
+\end{equation}
+so two differently phrased queries that return the same content are recognized as equivalent and not as distinct results.
+Equivalence is conservative and applies only to read-effect calls that the contract marks deterministic, so a write is never treated as a duplicate and a real state change is never masked.
+Subsequent use of an existing artifact is recorded as $\mathrm{consumes}$ when it serves as input and as $\mathrm{reuses}$ when execution reuses it directly, and observable state is versioned with $\mathrm{supersedes}$ edges between successive writes, so a later call in an application workflow links to an earlier write under the same representation used for artifact dependencies in retrieval.
+The output is the accumulated graph $\mathcal{G}_t$ holding the current block with its calls, artifacts, states, failures, and cross-block links.
+
+\subsection{Graph-Based Progress Assessment}
+\label{sec:method-progress}
+
+This stage relates what a block intended to do to what it actually changed, so that new results, repeated results, and target-local stagnation are separated.
+
+\textbf{Intent Registration and Binding.}\quad
+Here the purpose of a block becomes a first-class object bound to its observed effect.
+When the agent submits a program it declares an intent
+\begin{equation}
+I_t = (a_t, z_t, e_t),
+\label{eq:intent}
+\end{equation}
+where $a_t$ is the action type, $z_t$ the target node, and $e_t$ the expected change, and the target may be the task node or an existing subgoal.
+Before execution $f_{\mathrm{proj}}$ registers an intent node with a $\mathrm{targets}$ edge to $z_t$ and snapshots the current artifacts and states, and after execution it binds the intent to the executed block through an $\mathrm{implemented\_by}$ edge and attaches an action receipt, so later analysis can locate which attempt produced which result along the same target.
+
+\textbf{Graph Delta and Stagnation Analysis.}\quad
+Progress is defined on graph effects instead of on new output text.
+From the executed block, $f_{\mathrm{diff}}$ collects the produced artifacts $\mathcal{A}_t$, assigns to $\mathcal{E}_t$ those carrying an $\mathrm{equiv}$ in-edge, and defines the new artifacts and the progress indicator as
+\begin{equation}
+\mathcal{N}_t = \mathcal{A}_t \setminus \mathcal{E}_t, \qquad
+p_t = \mathbbm{1}\!\left[\, \mathcal{N}_t \neq \varnothing \ \lor\ \mathcal{S}_t \neq \varnothing \,\right],
+\label{eq:novel}
+\end{equation}
+where $\mathcal{S}_t$ is the set of state effects linked by $\mathrm{writes}$ or $\mathrm{mutates}$, so allocating a new result node or reusing a cached one does not count as new progress.
+A target-local stagnation count then follows the recurrence
+\begin{equation}
+s_t(z_t) =
+\begin{cases}
+0, & p_t = 1, \\
+s_{t-1}(z_t) + 1, & p_t = 0,
+\end{cases}
+\label{eq:stag}
+\end{equation}
+where counts on other targets stay independent, so the agent is told when a target stops advancing even though no error is raised.
+The count is an advisory input the agent may override, and a single non-advancing block changes nothing, since a plan change is only suggested once the count passes a threshold.
+The output is the round effect $\Delta_t$, the receipt bound to the declared action, and the stagnation count.
+
+\subsection{Graph-Based Action Selection}
+\label{sec:method-action}
+
+This stage turns the graph evidence into a bounded feedback and offers the next action with its reason, and the agent makes the choice.
+
+\textbf{Bounded Feedback Construction.}\quad
+The agent receives an evidence-focused view of the graph instead of the whole graph.
+From the accumulated graph, the intent, and the delta, $f_{\mathrm{sum}}$ extracts the declared action, its receipt, the new and equivalent artifacts, the state changes, the failure context, and the prior attempts on the target, and reduces them under the budget by pruning list items and then fields,
+\begin{equation}
+F_t = f_{\mathrm{sum}}^{B}(\mathcal{G}_t, I_t, \Delta_t), \qquad |F_t| \le B,
+\label{eq:feedback}
+\end{equation}
+so the long-horizon record stays at runtime while the model receives only the evidence its current decision needs.
+
+\textbf{Graph-Guided Action Selection.}\quad
+Recovery is exposed as an addressable graph operation instead of free-form retrying.
+The runtime turns execution signals into an opportunity set $\mathcal{O}_t = f_{\mathrm{opp}}(\Delta_t)$, where a failure yields a repair opportunity and a stagnation that reaches a threshold yields a replanning opportunity, and the agent selects an action
+\begin{equation}
+a_{t+1} \in \{\textsc{Continue},\ \textsc{Patch},\ \textsc{Replan},\ \textsc{Answer}\},
+\label{eq:actions}
+\end{equation}
+where \textsc{Continue} advances a new step, \textsc{Patch} returns to a failed node and re-executes, \textsc{Replan} changes the dependency path, and \textsc{Answer} terminates.
+The first three actions carry a new intent and program and re-enter Eq.~\ref{eq:pipeline}, so an action label is tied to concrete program behavior.
+The opportunity rules and the feedback budget are fixed defaults used unchanged across all benchmarks and backbones, so no part of the controller is tuned per task.
+Algorithm~\ref{alg:graphptc} summarizes the loop.
+
+\begin{algorithm}[t]
+\caption{\method performs graph-guided programmatic tool calling.}
+\label{alg:graphptc}
+\begin{algorithmic}[1]
+\REQUIRE task $q$, tools, feedback budget $B$
+\STATE initialize graph $\mathcal{G} \leftarrow \{\text{task node}\}$, feedback $F \leftarrow \varnothing$
+\WHILE{budget remains}
+    \STATE $(I, P) \leftarrow \pi(q, \mathcal{H}, F)$ \COMMENT{declare intent $I=(a,z,e)$ and program}
+    \IF{$a$ is \textsc{Answer}}
+        \STATE \textbf{return} the answer
+    \ENDIF
+    \STATE register $I$ and snapshot $\mathcal{G}$
+    \STATE $\tau \leftarrow$ execute $P$ with instrumented tools
+    \STATE $\mathcal{G} \leftarrow f_{\mathrm{proj}}(\mathcal{G}, I, \tau)$ \COMMENT{typed projection and cross-block linking, Sec.~\ref{sec:method-modeling}}
+    \STATE $\Delta \leftarrow f_{\mathrm{diff}}(\mathcal{G})$ over new artifacts $\mathcal{N}$, state effects $\mathcal{S}$, failures, stagnation \COMMENT{Sec.~\ref{sec:method-progress}}
+    \STATE $F \leftarrow f_{\mathrm{sum}}^{B}(\mathcal{G}, I, \Delta)$ with opportunity set $\mathcal{O}=f_{\mathrm{opp}}(\Delta)$ \COMMENT{Sec.~\ref{sec:method-action}}
+\ENDWHILE
+\end{algorithmic}
+\end{algorithm}
