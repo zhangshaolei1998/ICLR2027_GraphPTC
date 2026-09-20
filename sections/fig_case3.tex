@@ -1,0 +1,69 @@
+\begin{figure}[!htbp]
+\centering
+\begin{subfigure}{0.485\linewidth}\centering
+\begin{tikzpicture}[
+  font=\scriptsize, x=1.1cm, y=1.1cm,
+  b/.style={rounded corners=2pt,draw=black!70,fill=blue!7,minimum width=1.55cm,minimum height=0.6cm,align=center},
+  c/.style={circle,draw=black!70,fill=orange!22,minimum size=0.5cm,inner sep=0.4pt,font=\tiny},
+  cbad/.style={circle,draw=red!65,fill=red!14,minimum size=0.5cm,inner sep=0.4pt,font=\tiny},
+  o/.style={rounded corners=1pt,draw=black!30,fill=black!3,minimum width=3.25cm,minimum height=0.55cm,align=left,font=\tiny,inner sep=3pt},
+  obad/.style={rounded corners=1pt,draw=red!55,fill=red!8,minimum width=3.25cm,minimum height=0.55cm,align=left,font=\tiny,inner sep=3pt},
+  a/.style={->,>=Stealth,draw=black!60,thin},
+  seq/.style={->,>=Stealth,draw=black!40,thin}]
+\node[b] (p1) at (0,3.6) {$P_1$: \textit{get}};
+\node[c,right=2mm of p1] (a1) {r};
+\node[o,right=2mm of a1] (o1) {\texttt{phone {=} 555-1234}};
+\node[b] (p2) at (0,2.55) {$P_2$: \textit{update}};
+\node[c,right=2mm of p2] (a2) {w};
+\node[o,right=2mm of a2] (o2) {\texttt{ok, phone {=} 555-9999}};
+\node[b] (p3) at (0,1.5) {$P_3$: \textit{send}};
+\node[cbad,right=2mm of p3] (a3) {snd};
+\node[obad,right=2mm of a3] (o3) {\texttt{sms $\to$ 555-1234}};
+\node[b,fill=red!8,draw=red!55] (p4) at (0,0.4) {$P_4$: \textit{re-send}};
+\node[c,right=2mm of p4] (a4) {r};
+\node[o,right=2mm of a4] (o4) {\texttt{555-9999, resend}};
+\draw[seq] (p1)--(a1); \draw[seq] (a1)--(o1); \draw[seq] (o1.south) to[out=-90,in=90] (p2.north east);
+\draw[seq] (p2)--(a2); \draw[seq] (a2)--(o2); \draw[seq] (o2.south) to[out=-90,in=90] (p3.north east);
+\draw[seq] (p3)--(a3); \draw[seq] (a3)--(o3); \draw[seq,red!55,semithick] (o3.south) to[out=-90,in=90] (p4.north east);
+\draw[seq] (p4)--(a4); \draw[seq] (a4)--(o4);
+\node[align=center,font=\tiny,text=red!65!black] at (2.9,-0.4) {SMS lands on the stale number,\\ agent adds a fourth block};
+\end{tikzpicture}
+\caption{PTC on a mutated state}
+\end{subfigure}\hfill
+\begin{subfigure}{0.485\linewidth}\centering
+\begin{tikzpicture}[
+  font=\scriptsize, x=1.1cm, y=1.1cm,
+  b/.style={rounded corners=2pt,draw=black!70,fill=blue!7,minimum width=1.2cm,minimum height=0.6cm,align=center},
+  c/.style={circle,draw=black!70,fill=orange!22,minimum size=0.44cm,inner sep=0.4pt,font=\tiny},
+  st/.style={rounded corners=1pt,draw=green!45!black,fill=green!14,minimum width=1.25cm,minimum height=0.55cm,align=center,font=\scriptsize},
+  stold/.style={rounded corners=1pt,draw=black!45,fill=black!5,minimum width=1.25cm,minimum height=0.55cm,align=center,font=\scriptsize,text=black!55},
+  fb/.style={rounded corners=2pt,draw=green!45!black,fill=green!8,minimum width=2.7cm,minimum height=0.6cm,align=center,font=\tiny,inner sep=2.5pt},
+  send/.style={rounded corners=2pt,draw=green!45!black,fill=green!14,minimum width=1.1cm,minimum height=0.55cm,align=center,font=\scriptsize},
+  a/.style={->,>=Stealth,draw=black!60,thin},
+  sup/.style={->,>=Stealth,draw=green!45!black,semithick},
+  res/.style={->,>=Stealth,draw=green!45!black,semithick},
+  lbl/.style={font=\tiny}]
+\node[b] (p1) at (0,3.6) {$P_1$};
+\node[c,right=2.5mm of p1] (c1) {r};
+\node[stold,right=6mm of c1] (vold) {\tiny 555-1234};
+\node[b] (p2) at (0,2.55) {$P_2$};
+\node[c,right=2.5mm of p2] (c2) {w};
+\node[st,right=6mm of c2] (vnew) {\tiny 555-9999};
+\node[b] (p3) at (0,1.5) {$P_3$};
+\node[c,right=2.5mm of p3] (c3) {r};
+\draw[a] (p1)--(c1); \draw[a] (c1)--(vold) node[midway,above,lbl]{reads};
+\draw[a] (p2)--(c2); \draw[a] (c2)--(vnew) node[midway,below=2.4mm,lbl]{writes};
+\draw[sup] (vnew) to[out=175,in=185] node[midway,left=-0.5mm,lbl,text=green!45!black]{\textbf{supersedes}} (vold);
+\draw[a] (p3)--(c3);
+\draw[res] (c3.east) to[out=0,in=-90] node[pos=0.6,right,lbl,text=green!45!black]{reads} (vnew.south);
+\node[fb] (fb) at (0.75,0.4) {$P_3$ reads $v_{\text{new}}$};
+\node[send,right=2.5mm of fb] (send) {\textit{send}};
+\draw[a,green!45!black,semithick] (p3.south) to[out=-90,in=180] (fb.west);
+\draw[a,green!45!black,semithick] (fb)--(send);
+\node[align=center,font=\tiny,text=green!45!black] at (2.25,-0.4) {runtime routes the read to the\\ current version, one fewer block};
+\end{tikzpicture}
+\caption{GraphPTC on the same state}
+\end{subfigure}
+\caption{Case 3, stale state on a long-horizon workflow. (a) A linear history holds both the pre-update and post-update values as juxtaposed strings, and the agent can send to the wrong one. (b) The execution graph versions the observable state and a \texttt{supersedes} edge routes any later read to the current version.}
+\label{fig:case3}
+\end{figure}

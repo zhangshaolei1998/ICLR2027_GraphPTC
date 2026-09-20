@@ -49,20 +49,20 @@
 \node[fail] (f1) at (6.0,-0.55) {\tiny F};
 
 % intent binding
-\draw[rel] (in)--(gb1) node[midway,left,font=\tiny]{impl.};
+\draw[rel] (in)--(gb1) node[midway,left,font=\tiny]{implemented\_by};
 \draw[rel, dashed] (in) to[out=0,in=180] (tk);
 
 % block1 internals
-\draw[rel] (gb1)--(c1) node[midway,above,font=\tiny]{exec};
+\draw[rel] (gb1)--(c1) node[pos=0.28,above,font=\tiny,xshift=-1.2mm]{executes};
 \draw[rel] (gb1)--(c2);
-\draw[rel] (c1)--(a1) node[midway,above,font=\tiny]{prod};
-\draw[rel] (c2)--(s1) node[midway,above,font=\tiny]{mut};
+\draw[rel] (c1)--(a1) node[pos=0.35,above,font=\tiny]{produces};
+\draw[rel] (c2)--(s1) node[midway,below,font=\tiny]{mutates};
 
 % block2 internals + cross-block
 \draw[rel] (gb2)--(c3);
 \draw[rel] (c3)--(a2);
-\draw[rel] (a1) to[out=-90,in=90] (c3) node[midway,right,font=\tiny]{consumes};
-\draw[rel, dotted] (a2) to[out=200,in=-20] (a1) node[midway,below,font=\tiny]{equiv.};
+\draw[rel] (a1) to[out=-90,in=90] node[pos=0.2,right,font=\tiny]{consumes} (c3);
+\draw[rel, dotted] (a2) to[out=200,in=-20] node[midway,right,font=\tiny]{equivalent\_to} (a1);
 \draw[rel] (gb2)--(f1) node[midway,left,font=\tiny]{fails\_at};
 
 % blocks belong to task
@@ -75,8 +75,6 @@
 \node[align=center, text=green!45!black, font=\tiny] at (8.05,-0.7) {typed in-block effects + multi-relation\\ cross-block graph, addressable and revisitable};
 
 \end{tikzpicture}
-\vspace{-2mm}
 \caption{PTC records execution as a linear stream of code and output where cross-block dependencies and progress are lost, whereas \method maintains a dynamic execution graph that models the internal effects of each block (tool calls with read $r$ or write $w$ effects, artifacts $v$, states st, failures F) and cross-block dependencies (consumes, equivalence, supersession), over which a declared intent selects continue, patch, replan, or answer.}
 \label{fig:overview}
-\vspace{-3mm}
 \end{figure}

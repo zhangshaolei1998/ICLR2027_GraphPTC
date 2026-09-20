@@ -1,0 +1,75 @@
+\begin{figure}[!htbp]
+\centering
+\begin{subfigure}{0.485\linewidth}\centering
+\begin{tikzpicture}[
+  font=\scriptsize, x=1.1cm, y=1.1cm,
+  b/.style={rounded corners=2pt,draw=black!70,fill=blue!7,minimum width=1.55cm,minimum height=0.6cm,align=center},
+  c/.style={circle,draw=black!70,fill=orange!22,minimum size=0.5cm,inner sep=0.4pt,font=\tiny},
+  cbad/.style={circle,draw=red!65,fill=red!14,minimum size=0.5cm,inner sep=0.4pt,font=\tiny},
+  o/.style={rounded corners=1pt,draw=black!30,fill=black!3,minimum width=2.8cm,minimum height=0.55cm,align=left,font=\tiny,inner sep=3pt},
+  obad/.style={rounded corners=1pt,draw=red!55,fill=red!8,minimum width=2.8cm,minimum height=0.55cm,align=left,font=\tiny,inner sep=3pt},
+  a/.style={->,>=Stealth,draw=black!60,thin},
+  seq/.style={->,>=Stealth,draw=black!40,thin}]
+\node[b] (p1) at (0,3.6) {$P_1$: \textit{fetch bill}};
+\node[c,right=2mm of p1] (a1) {get};
+\node[o,right=2mm of a1] (o1) {\texttt{bill\_id{=}42}};
+\node[b] (p2) at (0,2.55) {$P_2$: \textit{fetch email}};
+\node[c,right=2mm of p2] (a2) {get};
+\node[o,right=2mm of a2] (o2) {\texttt{addr@x}};
+\node[b] (p3) at (0,1.5) {$P_3$: \textit{send}};
+\node[cbad,right=2mm of p3] (a3) {snd};
+\node[obad,right=2mm of a3] (o3) {\texttt{TypeError: int}};
+\node[b,fill=red!8,draw=red!55] (p4) at (0,0.4) {$P_4$: \textit{redo all}};
+\node[c,right=2mm of p4] (a41) {get};
+\node[c,right=0.8mm of a41] (a42) {get};
+\node[c,right=0.8mm of a42] (a43) {snd};
+\node[o,right=2mm of a43] (o4) {\texttt{ok}};
+\draw[seq] (p1)--(a1); \draw[seq] (a1)--(o1); \draw[seq] (o1.south) to[out=-90,in=90] (p2.north east);
+\draw[seq] (p2)--(a2); \draw[seq] (a2)--(o2); \draw[seq] (o2.south) to[out=-90,in=90] (p3.north east);
+\draw[seq] (p3)--(a3); \draw[seq] (a3)--(o3); \draw[seq,red!55,semithick] (o3.south) to[out=-90,in=90] (p4.north east);
+\draw[seq] (p4)--(a41); \draw[seq] (a43)--(o4);
+\node[align=center,font=\tiny,text=red!65!black] at (2.9,-0.62) {retried block re-issues\\ two calls that already succeeded};
+\end{tikzpicture}
+\caption{PTC on a failing write}
+\end{subfigure}\hfill
+\begin{subfigure}{0.485\linewidth}\centering
+\begin{tikzpicture}[
+  font=\scriptsize, x=1.1cm, y=1.1cm,
+  b/.style={rounded corners=2pt,draw=black!70,fill=blue!7,minimum width=1.25cm,minimum height=0.6cm,align=center},
+  c/.style={circle,draw=black!70,fill=orange!22,minimum size=0.44cm,inner sep=0.4pt,font=\tiny},
+  cbad/.style={circle,draw=red!65,fill=red!14,minimum size=0.44cm,inner sep=0.4pt,font=\tiny},
+  art/.style={circle,draw=black!70,fill=green!18,minimum size=0.5cm,inner sep=0.4pt,font=\scriptsize},
+  fail/.style={rounded corners=1pt,draw=red!75,fill=red!16,minimum size=0.52cm,inner sep=1pt,font=\tiny},
+  intent/.style={rounded corners=2pt,draw=green!45!black,fill=green!14,minimum width=1.35cm,minimum height=0.55cm,font=\tiny,align=center},
+  a/.style={->,>=Stealth,draw=black!60,thin},
+  faila/.style={->,>=Stealth,draw=red!60,semithick},
+  patch/.style={->,>=Stealth,dashed,green!45!black,semithick},
+  lbl/.style={font=\tiny}]
+\node[b] (p1) at (0,3.6) {$P_1$};
+\node[c,right=2mm of p1] (c1) {get};
+\node[art,right=2mm of c1] (v1) {$v_1$};
+\node[b] (p2) at (0,2.55) {$P_2$};
+\node[c,right=2mm of p2] (c2) {get};
+\node[art,right=2mm of c2] (v2) {$v_2$};
+\node[b] (p3) at (0,1.5) {$P_3$};
+\node[cbad,right=2mm of p3] (c3) {snd};
+\node[fail,right=2mm of c3] (F) {F};
+\node[intent] (int) at (2.9,0.85) {\textsc{Patch} on $c_3$};
+\node[b] (p4) at (0,0.4) {$P_4$};
+\node[c,right=2mm of p4] (c4) {snd};
+\node[art,right=2mm of c4] (v4) {$v_4$};
+\draw[a] (p1)--(c1); \draw[a] (c1)--(v1);
+\draw[a] (p2)--(c2); \draw[a] (c2)--(v2);
+\draw[a] (p3)--(c3); \draw[faila] (c3)--(F) node[midway,below=1.4mm,lbl,text=red!60!black]{fails\_at};
+\draw[a] (v1.east) to[out=-30,in=45] node[pos=0.65,right,lbl]{consumes} (c3);
+\draw[a] (v2.east) to[out=-30,in=30] (c3);
+\draw[patch] (F.south) to[out=-70,in=60] (int.north);
+\draw[a,green!45!black,semithick] (int) to[out=-110,in=-70] node[pos=0.5,below=-0.3mm,lbl,text=green!45!black]{implemented\_by} (c4);
+\draw[a] (p4)--(c4); \draw[a] (c4)--(v4);
+\node[align=center,font=\tiny,text=green!45!black] at (2.55,-0.62) {only $c_3$ re-executes,\\ $c_1$ and $c_2$ stay addressable};
+\end{tikzpicture}
+\caption{GraphPTC on the same failure}
+\end{subfigure}
+\caption{Case 2, a failed write on an AppWorld task. (a) A linear history places the failure inside a long output, so the agent re-writes the whole block and re-issues calls that already succeeded. (b) The execution graph binds the failure to a specific call through a \texttt{fails\_at} edge, and a \textsc{Patch} intent targets that call for local repair.}
+\label{fig:case2}
+\end{figure}

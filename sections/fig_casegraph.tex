@@ -52,8 +52,6 @@
 \node[font=\tiny, text=purple!60!black] at (10.6,-0.9) {(3) reuse write};
 
 \end{tikzpicture}
-\vspace{-1mm}
 \caption{An example execution graph built by GraphPTC. Blocks $P_t$ are projected into typed calls (read $r$, write $w$), artifacts $v$, states, and failures $F$. (1) block $P_3$ produces $v_2$ that an \texttt{equivalent\_to} edge links to the earlier $v_1$, so the agent skips a redundant query. (2) a failed call in $P_4$ adds a \texttt{FAILURE} the agent repairs with a targeted \textsc{Patch} instead of re-running the block. (3) block $P_5$ reads the state written by $P_2$ through the \texttt{supersedes} chain instead of re-deriving it.}
 \label{fig:casegraph}
-\vspace{-2mm}
 \end{figure}

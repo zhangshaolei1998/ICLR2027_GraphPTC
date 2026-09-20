@@ -1,0 +1,62 @@
+\begin{figure}[!htbp]
+\centering
+\begin{subfigure}{0.485\linewidth}\centering
+\begin{tikzpicture}[
+  font=\scriptsize, x=1.1cm, y=1.1cm,
+  b/.style={rounded corners=2pt,draw=black!70,fill=blue!7,minimum width=1.35cm,minimum height=0.6cm,align=center},
+  o/.style={rounded corners=1pt,draw=black!25,fill=black!3,minimum width=3.55cm,minimum height=0.55cm,align=left,font=\tiny,inner sep=3pt},
+  obad/.style={rounded corners=1pt,draw=red!55,fill=red!8,minimum width=3.55cm,minimum height=0.55cm,align=left,font=\tiny,inner sep=3pt},
+  a/.style={->,>=Stealth,draw=black!60,thin},
+  seq/.style={->,>=Stealth,draw=black!40,thin}]
+\node[b] (p1) at (0,3.6) {$P_1$: \textit{search}};
+\node[o,right=2.5mm of p1] (o1) {\texttt{author {=} Wu}};
+\node[b] (p2) at (0,2.55) {$P_2$: \textit{search}};
+\node[o,right=2.5mm of p2] (o2) {\texttt{birthplace {=} Huai'an}};
+\node[b] (p3) at (0,1.5) {$P_3$: \textit{search}};
+\node[obad,right=2.5mm of p3] (o3) {\texttt{Wu $\to$ Huai'an}};
+\node[b,fill=red!8,draw=red!55] (p4) at (0,0.45) {$P_4$: \textit{verify}};
+\node[obad,right=2.5mm of p4] (o4) {\texttt{extra query}};
+\draw[a] (p1)--(o1); \draw[seq] (o1.south) to[out=-100,in=100] (p2.north east);
+\draw[a] (p2)--(o2); \draw[seq] (o2.south) to[out=-100,in=100] (p3.north east);
+\draw[a] (p3)--(o3); \draw[seq,red!55,semithick] (o3.south) to[out=-100,in=100] (p4.north east);
+\draw[a] (p4)--(o4);
+\node[align=center,font=\tiny,text=red!65!black] at (2.8,-0.35) {duplicated fact hidden in text,\\ agent spends a 4th block};
+\end{tikzpicture}
+\caption{PTC on a multi-hop lookup}
+\end{subfigure}\hfill
+\begin{subfigure}{0.485\linewidth}\centering
+\begin{tikzpicture}[
+  font=\scriptsize, x=1.1cm, y=1.1cm,
+  b/.style={rounded corners=2pt,draw=black!70,fill=blue!7,minimum width=1.15cm,minimum height=0.6cm,align=center},
+  c/.style={circle,draw=black!70,fill=orange!22,minimum size=0.44cm,inner sep=0.4pt},
+  art/.style={circle,draw=black!70,fill=green!18,minimum size=0.52cm,inner sep=0.4pt,font=\scriptsize},
+  fb/.style={rounded corners=2pt,draw=green!45!black,fill=green!8,minimum width=3.05cm,minimum height=0.6cm,align=center,font=\tiny,inner sep=2.5pt},
+  intent/.style={rounded corners=2pt,draw=green!45!black,fill=green!14,minimum width=1.35cm,minimum height=0.55cm,font=\tiny,align=center},
+  a/.style={->,>=Stealth,draw=black!60,thin},
+  eq/.style={->,>=Stealth,dashed,green!45!black,semithick},
+  lbl/.style={font=\tiny}]
+\node[b] (p1) at (0,3.6) {$P_1$};
+\node[c,right=2.5mm of p1] (c1) {\tiny r};
+\node[art,right=2.5mm of c1] (v1) {$v_1$};
+\node[b] (p2) at (0,2.55) {$P_2$};
+\node[c,right=2.5mm of p2] (c2) {\tiny r};
+\node[art,right=2.5mm of c2] (v2) {$v_2$};
+\node[b] (p3) at (0,1.5) {$P_3$};
+\node[c,right=2.5mm of p3] (c3) {\tiny r};
+\node[art,right=2.5mm of c3] (v3) {$v_3$};
+\draw[a] (p1)--(c1); \draw[a] (c1)--(v1);
+\draw[a] (p2)--(c2); \draw[a] (c2)--(v2);
+\draw[a] (p3)--(c3); \draw[a] (c3)--(v3);
+\draw[a] (v1.south) to[out=-90,in=90] node[midway,right,lbl]{consumes} (c2.north);
+\draw[eq] (v3) to[out=145,in=215] node[midway,left=-0.5mm,lbl,text=green!45!black]{\textbf{equivalent\_to}} (v2);
+\node[fb] (fb) at (0.9,0.5) {$\Delta_3$: $\mathcal{N}_3{=}\varnothing,\ p_3{=}0$};
+\node[intent] (int) at (3.55,0.5) {\textsc{Answer}};
+\draw[a,green!45!black,semithick] (v3.south) to[out=-90,in=90] (fb.north);
+\draw[a,green!45!black,semithick] (fb)--(int);
+\node[align=center,font=\tiny,text=green!45!black] at (2.25,-0.35) {graph makes the duplicate explicit,\\ agent answers in one fewer round};
+\end{tikzpicture}
+\caption{GraphPTC on the same lookup}
+\end{subfigure}
+\caption{Case 1, cross-block equivalence on a multi-hop question. (a) A linear history records three raw output strings and hides that the third and second carry the same fact under different phrasings. (b) The execution graph gives the two results one identity key $\kappa(\cdot)$ and one \texttt{equivalent\_to} edge, and the delta $\Delta_3$ carries the signal that no new artifact appeared.}
+\label{fig:case1}
+\end{figure}

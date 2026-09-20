@@ -3,9 +3,11 @@ All numbers are computed from the frozen run artifacts under runs/**/results.jso
 and the per-episode execution-graph snapshots. Kept here so every figure is reproducible.
 """
 
-BACKBONES = ["GPT-5.6-Sol", "Claude-Opus-5", "DeepSeek-V4-Pro", "Kimi-K3"]
+BACKBONES = ["GPT-5.6-Sol", "Claude-Opus-5", "DeepSeek-V4-Pro", "Kimi-K3", "Qwen3.8-Max"]
 
 # ---- Complexity scaling: pass-rate gain of GraphPTC over per-call use, by execution-graph size (AppWorld) ----
+# Averaged over the four backbones with archived per-episode graph snapshots.
+SCALING_BACKBONES = ["GPT-5.6-Sol", "Claude-Opus-5", "DeepSeek-V4-Pro", "Kimi-K3"]
 SCALING_BINS = ["<=4", "5-8", "9-14", ">=15"]
 SCALING_GAIN = {  # GraphPTC - Direct, percentage points
     "GPT-5.6-Sol":     [11.11, 13.77, 13.25, 24.07],
@@ -34,14 +36,16 @@ RECOVERY = {  # backbone -> (P(recover | realized), P(recover | not realized)) i
 DIRECT_AVG = {  # seven-setting average of the Direct Tool Calling baseline
     "GPT-5.6-Sol": 63.24, "Claude-Opus-5": 69.33,
     "DeepSeek-V4-Pro": 54.53, "Kimi-K3": 50.72,
+    "Qwen3.8-Max": 62.94,
 }
 GAIN_OVER_DIRECT = {  # GraphPTC minus Direct, seven-setting average (percentage points)
     "GPT-5.6-Sol": 6.30, "Claude-Opus-5": 4.50,
-    "DeepSeek-V4-Pro": 8.19, "Kimi-K3": 8.76,
+    "DeepSeek-V4-Pro": 6.24, "Kimi-K3": 8.76,
+    "Qwen3.8-Max": 8.21,
 }
-GROUP = {  # stronger vs weaker by DIRECT_AVG
-    "GPT-5.6-Sol": "stronger", "Claude-Opus-5": "stronger",
-    "DeepSeek-V4-Pro": "weaker", "Kimi-K3": "weaker",
+GROUP = {  # frontier vs second-tier
+    "GPT-5.6-Sol": "frontier", "Claude-Opus-5": "frontier",
+    "DeepSeek-V4-Pro": "second-tier", "Kimi-K3": "second-tier", "Qwen3.8-Max": "second-tier",
 }
 
 # ---- Fidelity of intent-effect binding: fraction of declared expected changes that are realized (AppWorld) ----
@@ -60,7 +64,7 @@ FAILURE_ISOLATION = {
 TOKENS = {  # backbone -> arm -> (mean_input_ktokens, TGC)
     "GPT-5.6-Sol":     {"Direct": (188.2, 86.4), "PTC": (66.2, 92.4),  "GraphPTC": (84.3, 95.6)},
     "Claude-Opus-5":   {"Direct": (268.6, 80.8), "PTC": (121.9, 79.1), "GraphPTC": (168.2, 95.0)},
-    "DeepSeek-V4-Pro": {"Direct": (245.5, 65.7), "PTC": (133.2, 80.1), "GraphPTC": (189.2, 84.2)},
+    "DeepSeek-V4-Pro": {"Direct": (245.5, 65.7), "PTC": (133.2, 80.1), "GraphPTC": (189.2, 81.5)},
     "Kimi-K3":         {"Direct": (213.1, 47.0), "PTC": (68.1, 83.2),  "GraphPTC": (92.2, 84.9)},
 }
 
